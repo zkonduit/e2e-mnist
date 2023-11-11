@@ -1,0 +1,41 @@
+{
+  "name": "secret-id-web-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@ezkljs/engine": "^3.9.3",
+    "@ezkljs/verify": "^0.0.8",
+    "@tensorflow/tfjs": "^4.12.0",
+    "browser-image-compression": "^2.0.2",
+    "classnames": "^2.3.2",
+    "ethers": "^5.7.2",
+    "file-saver": "^2.0.5",
+    "get-pixels": "^3.3.3",
+    "json-bigint": "^1.0.0",
+    "jszip": "^3.10.1",
+    "next": "14.0.1",
+    "react": "^18",
+    "react-code-blocks": "^0.1.4",
+    "react-dom": "^18",
+    "sass": "^1.69.5",
+    "viem": "^1.18.4",
+    "wagmi": "^1.4.5"
+  },
+  "devDependencies": {
+    "@types/file-saver": "^2.0.6",
+    "@types/get-pixels": "^3.3.3",
+    "@types/json-bigint": "^1.0.3",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.1",
+    "typescript": "^5"
+  }
+}

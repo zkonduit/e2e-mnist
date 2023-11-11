@@ -1,0 +1,52 @@
+.container {
+  .image__uploader {
+    display: flex;
+    align-items: center;
+    border-radius: 5px;
+    border: 1px solid black;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: 200ms ease;
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    &:active {
+      transform: scale(0.99);
+    }
+    .image__uploader__image__container {
+      border-radius: 2px;
+      margin-right: 10px;
+      &.real__image {
+        padding: 0;
+        border: none;
+        .image__uploader__image {
+          width: 40px;
+          height: 40px;
+          border-radius: 5px;
+          overflow: hidden;
+        }
+      }
+      .image__uploader__image {
+        position: relative;
+        width: 20px;
+        height: 20px;
+      }
+    }
+    .image__uploader__name {
+      margin: 0;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  }
+  &.disabled {
+    .image__uploader {
+      &:hover {
+        background-color: transparent;
+      }
+      &:active {
+        transform: scale(1);
+      }
+    }
+  }
+}
