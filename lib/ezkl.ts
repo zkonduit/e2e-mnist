@@ -16,19 +16,10 @@ import { saveAs } from "file-saver";
 import JSONBig from "json-bigint";
 // import type { Tensor } from "@tensorflow/tfjs";
 
-async function getDataBuffer(name: string): Promise<ArrayBuffer> {
-  // Helper function to fetch and create a file object from a public URL
-  const fetchAndCreateBuffer = async (path: string): Promise<ArrayBuffer> => {
-    const response = await fetch(path);
-    const buffer = await response.arrayBuffer();
-    return buffer;
-  };
-
-  // Fetch each sample file and create a File object
-  const buffer = await fetchAndCreateBuffer(
-    `https://wagmi-studio.fra1.cdn.digitaloceanspaces.com/secret-id/${name}`
-  );
-  return buffer;
+async function getDataBuffer(name: string): Promise<Uint8ClampedArray> {
+  const response = await fetch(`/data/${name}`);
+  const buffer = await response.arrayBuffer();
+  return new Uint8ClampedArray(buffer);
 }
 
 export function readUploadedFileAsBuffer(file: File) {
@@ -142,9 +133,9 @@ export async function handleGenProofButton(witness: Uint8ClampedArray) {
   console.log("proof start")
   let output = prove(
     witness,
-    new Uint8ClampedArray(await getDataBuffer("key.pk")),
-    new Uint8ClampedArray(await getDataBuffer("compiled_model.ezkl")),
-    new Uint8ClampedArray(await getDataBuffer("kzg.srs"))
+    await getDataBuffer("key.pk"),
+    await getDataBuffer("compiled_model.ezkl"),
+    await getDataBuffer("kzg.srs")
   );
 
   const end = performance.now(); // End the timer
@@ -202,7 +193,7 @@ export async function handleGenWitnessButton(
   };
   console.log("formattedInput", formattedInput);
   let output = genWitness(
-    new Uint8ClampedArray(await getDataBuffer("compiled_model.ezkl")),
+    await getDataBuffer("compiled_model.ezkl"),
     new Uint8ClampedArray(
       new TextEncoder().encode(JSON.stringify(formattedInput))
     )

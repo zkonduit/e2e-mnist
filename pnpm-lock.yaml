@@ -6,11 +6,11 @@ settings:
 
 dependencies:
   '@ezkljs/engine':
-    specifier: ^3.9.3
-    version: 3.9.3
+    specifier: ^3.10.0
+    version: 3.10.0
   '@ezkljs/verify':
-    specifier: ^0.0.8
-    version: 0.0.8
+    specifier: ^0.0.9
+    version: 0.0.9
   '@tensorflow/tfjs':
     specifier: ^4.12.0
     version: 4.12.0(seedrandom@3.0.5)
@@ -673,22 +673,15 @@ packages:
       '@ethersproject/strings': 5.7.0
     dev: false
 
-  /@ezkljs/engine@3.8.3:
-    resolution: {integrity: sha512-nvKw01fQ/fm+8x8Er/hdxkzYU9IrBWFnNKYnRbjsQmdNSIjG0gpQhzf9rnB9U0FJQqB8Wg6f9rUen2iIJt+4Gw==}
+  /@ezkljs/engine@3.10.0:
+    resolution: {integrity: sha512-utI4dTk8Bo6J5gKgB+XOJPmvxFjA9zxx63NY+cH6mZRc69yoOb+yWgSKFyZiQvhvh/bmsjFdfRTUK8fi6vHVTw==}
     dependencies:
       '@types/json-bigint': 1.0.3
       json-bigint: 1.0.0
     dev: false
 
-  /@ezkljs/engine@3.9.3:
-    resolution: {integrity: sha512-tiT7J8R78nERQiwf6ikAP23iiPbY54P+UcS9xQ4mF27GLirum9uHdhKQXdkxYMLMzFNWBpmcFsCMYg0MP5B87A==}
-    dependencies:
-      '@types/json-bigint': 1.0.3
-      json-bigint: 1.0.0
-    dev: false
-
-  /@ezkljs/verify@0.0.8:
-    resolution: {integrity: sha512-FrWNhzXFfq2N0LrXIbzJdgkhAMELVwFrFGQdIR1TOJntx96LTXgUy5dR1S31GH4MY9Buio3CjdKDoRcr6aKHtg==}
+  /@ezkljs/verify@0.0.9:
+    resolution: {integrity: sha512-BkLpGdjfP1SkbYRoursKGBcoNQUgpEHVRsTkTRcj8qSLm1OhEpxXAoiq218TeO2cJ6am9vybq1+e8XL0c21XpQ==}
     dependencies:
       '@ethereumjs/common': 4.1.0
       '@ethereumjs/evm': 2.1.0
@@ -697,7 +690,7 @@ packages:
       '@ethereumjs/util': 9.0.1
       '@ethereumjs/vm': 7.1.0
       '@ethersproject/abi': 5.7.0
-      '@ezkljs/engine': 3.8.3
+      '@ezkljs/engine': 3.10.0
       ethers: 6.8.1
       json-bigint: 1.0.0
     transitivePeerDependencies:
@@ -1006,7 +999,7 @@ packages:
     resolution: {integrity: sha512-osvveYtyzdEVbt3OfwwXFr4P2iVBL5u1Q3q4ONBfDY/UpOuXmOlbgwc1xECEboY8wIays8Yt6onaWMUdUbfl0A==}
     dependencies:
       '@noble/curves': 1.1.0
-      '@noble/hashes': 1.3.1
+      '@noble/hashes': 1.3.2
       '@scure/base': 1.1.3
     dev: false
 

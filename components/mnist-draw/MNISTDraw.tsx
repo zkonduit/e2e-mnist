@@ -7,11 +7,10 @@ import { CopyBlock, dracula } from 'react-code-blocks';
 import { useSharedResources } from "@/providers/ezkl";
 import { Button } from "@/components/button/Button";
 import styles from "../../app/_components/image-uploader/image-uploader.module.scss";
-// import styles from "../_components/image-uploader.module.scss";
-// import { generateProof, buildContractCallArgs } from './snarkUtils';
 import { Tensor, InferenceSession } from 'onnxruntime-web';
-// import { doClassify } from './Classify';
 // import { verifyProof } from './MyVerify';
+
+// TODO: Pretty print the proof object and render download proof file button in proof block
 
 const size = 28;
 const MNISTSIZE = 784;
@@ -145,7 +144,13 @@ export function MNISTDraw() {
         const proof = engine.deserialize(output);
 
         console.log(`Proof time: ${executionTime}ms`);
-        setProof(proof);
+        // Define proof object with just proof hex string field and public instances field
+        // TODO: format proof array as a hex string once the new release is minted with engine method to perform that hex conversion. 
+        const proofObj = {
+            proof: proof.proof,
+            instances: proof.instances
+        }
+        setProof(proofObj);
         console.log("proof", proof);
         console.log("prediction", prediction);
         setProofDone(true);
@@ -213,7 +218,7 @@ export function MNISTDraw() {
         return (
             <div className="proof">
                 <CopyBlock
-                    text={JSON.stringify(proof.proof, null, 2)}
+                    text={JSON.stringify(proof, null, 4)}
                     language="json"
                     theme={dracula}
                 />
