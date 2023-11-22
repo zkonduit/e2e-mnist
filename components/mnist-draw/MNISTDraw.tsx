@@ -1,19 +1,48 @@
 'use client'
+import {
+    Modal
+} from 'flowbite-react'
 import { useState, FC } from 'react';
 import './MNIST.css';
 import './App.css';
-
-import { CopyBlock, dracula } from 'react-code-blocks';
 import { useSharedResources } from "@/providers/ezkl";
 import { Button } from "@/components/button/Button";
-import styles from "../../app/_components/image-uploader/image-uploader.module.scss";
-import { Tensor, InferenceSession } from 'onnxruntime-web';
-// import { verifyProof } from './MyVerify';
-
-// TODO: Pretty print the proof object and render download proof file button in proof block
-
+import styles from "../../app/styles.module.scss";
+import { stringify } from "json-bigint";
+import { usePublicClient } from 'wagmi';
+import { getContract } from 'wagmi/actions';
+import { publicProvider } from 'wagmi/providers/public';
 const size = 28;
 const MNISTSIZE = 784;
+
+const address = "0xAB5d009d3dcbdCB8432e53cde6BeF4A38Db7Bdc4";
+
+const abi = [
+    {
+        "inputs": [
+            {
+                "internalType": "bytes",
+                "name": "proof",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "instances",
+                "type": "uint256[]"
+            }
+        ],
+        "name": "verifyProof",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
 
 interface IMNISTBoardProps {
     grid: number[][];
@@ -77,29 +106,31 @@ const MNISTBoard: FC<IMNISTBoardProps> = ({ grid, onChange }) => {
 
 export function MNISTDraw() {
     const { engine, utils } = useSharedResources();
-    const [quantizedEmbedding, setQuantizedEmbedding] = useState<number[]>([]);
+    const [openModal, setOpenModal] = useState<string | undefined>();
+    const props = { openModal, setOpenModal };
     const [prediction, setPrediction] = useState<number>(-1);
-    const [witnessSer, setWitnessSer] = useState<Uint8ClampedArray | null>(null);
     const [proof, setProof] = useState<any | null>(null);
+    const [buffer, setBuffer] = useState<Uint8Array | null>(null); // proof file buffer
     const [generatingProof, setGeneratingProof] = useState(false);
-    const [generatingVerification, setGeneratingVerifaction] = useState(false);
+    // On chain verification states
+    const [generatingOnChainVerification, setGeneratingOnChainVerification] = useState(false);
+    const [isVerifiedOnChain, setIsVerifiedOnChain] = useState(false);
+    const [verifyOnChainDone, setVerifyOnChainDone] = useState(false);
+    // In browser verification states
+    const [generatingInBrowserVerification, setGeneratingInBrowserVerification] = useState(false);
+    const [isVerifiedInBrowser, setIsVerifiedInBrowser] = useState(false);
+    const [verifyInBrowserDone, setVerifyInBrowserDone] = useState(false);
+
     const [proofDone, setProofDone] = useState(false);
     const [predictionDone, setPredictionDone] = useState(false);
-    const [publicSignal, setPublicSignal] = useState<number[]>([]);
-    const [isVerified, setIsVerified] = useState(false);
-    const [verifyDone, setVerifyDone] = useState(false);
-    const batchSize = 16;
     const [grid, setGrid] = useState(Array(size).fill(null).map(() => Array(size).fill(0))); // initialize to a 28x28 array of 0's
 
-    // async function requestAccount() {
-    //     await window.ethereum.request({ method: 'eth_requestAccounts' });
-    // }
-
-    const parseOutput = (output: any[][], scale = 14) => {
+    const parseOutput = (output: any[][]) => {
         const convertedOutput = [];
         for (let item of output[0]) {
-            const result = engine.vecU64ToFloat(engine.serialize(item), scale);
-            convertedOutput.push(result);
+            const result = engine.vecU64ToInt(engine.serialize(item));
+            const resultInt = engine.deserialize(result);
+            convertedOutput.push(resultInt);
         }
         return convertedOutput;
     };
@@ -112,7 +143,6 @@ export function MNISTDraw() {
     };
 
     async function doProof() {
-        var start = performance.now();
         // get image from grid
         var imgTensor = Array(MNISTSIZE).fill(0);
         for (let i = 0; i < size; i++) {
@@ -120,47 +150,83 @@ export function MNISTDraw() {
                 imgTensor[i * size + j] = grid[i][j];
             }
         }
-        let witness
+        let witnessSer
         try {
             const { output, executionTime } = await utils.handleGenWitnessButton(
                 imgTensor
             );
-            witness = output
-            let witnessSer = engine.deserialize(output);
-            setWitnessSer(witnessSer);
-            const prediction = getPrediction(witnessSer.outputs);
+            witnessSer = output
+            let witness = engine.deserialize(output);
+            const prediction = getPrediction(witness.outputs);
             setPrediction(prediction);
+            console.log("prediction", prediction);
             setPredictionDone(true);
-            console.log("witnessSer", JSON.stringify(witnessSer, null, 4));
+            console.log("witness", JSON.stringify(witness, null, 4));
             console.log("witness", witness);
         } catch (error) {
             console.error("An error occurred:", error);
         }
         setGeneratingProof(true);
         const { output, executionTime } = await utils.handleGenProofButton(
-            new Uint8ClampedArray(witness!)
+            new Uint8ClampedArray(witnessSer!)
         );
+        setBuffer(output);
         setGeneratingProof(false);
         const proof = engine.deserialize(output);
 
-        console.log(`Proof time: ${executionTime}ms`);
-        // Define proof object with just proof hex string field and public instances field
-        // TODO: format proof array as a hex string once the new release is minted with engine method to perform that hex conversion. 
+        console.log(`Proving time: ${executionTime}ms`);
+        let instances = [];
+        console.log("proof instances", proof.instances);
+        for (let i = 0; i < proof.instances[0].length; i++) {
+            console.log("proof instance", proof.instances[0][i])
+            let intSerialized = engine.serialize(proof.instances[0][i]);
+            let intHex = engine.vecU64ToFelt(intSerialized);
+            let int = BigInt(intHex).toString();
+            instances.push(int);
+        }
         const proofObj = {
-            proof: proof.proof,
-            instances: proof.instances
+            proof: engine.printProofHex(new Uint8ClampedArray(output)),
+            instances
         }
         setProof(proofObj);
         console.log("proof", proof);
-        console.log("prediction", prediction);
         setProofDone(true);
     }
 
-    async function doVerify() {
-        const result = await verifyProof(proof, publicSignal)
-        if (result != null) {
-            setIsVerified(result);
-            setVerifyDone(true);
+    async function doInBrowserVerify() {
+        const { output, executionTime } = await utils.handleVerifyButton(new Uint8ClampedArray(buffer!));
+        console.log(`Verifying in browser time: ${executionTime}ms`);
+        setIsVerifiedInBrowser(output);
+        setVerifyInBrowserDone(true);
+    }
+
+    async function doOnChainVerify() {
+        // Replace with your contract's ABI and address
+
+        const provider = publicProvider();
+
+        // Instantiate the contract using wagmi's getContract hook
+        const contract = getContract({
+            address: address,
+            abi: abi,
+            walletClient: provider,
+            chainId: 80001
+        });
+
+        try {
+            let result: boolean;
+            result = await contract.read.verifyProof([
+                `0x${proof.proof}`,
+                proof.instances
+            ]) as boolean
+
+            setIsVerifiedOnChain(result);
+            setVerifyOnChainDone(true);
+        } catch (error) {
+            // window error popup
+            window.alert(`Verification failed with error: ${error}`);
+            console.log(`Verification failed with error: ${error}`)
+            setVerifyOnChainDone(false);
         }
     }
 
@@ -169,7 +235,8 @@ export function MNISTDraw() {
         setGrid(newArray);
         setPredictionDone(false);
         setProofDone(false);
-        setVerifyDone(false);
+        setVerifyInBrowserDone(false);
+        setVerifyOnChainDone(false);
     }
 
     function handleSetSquare(myrow: number, mycol: number) {
@@ -192,14 +259,28 @@ export function MNISTDraw() {
         );
     }
 
-    function VerifyButton() {
+    function VerifyInBrowserButton() {
         return (
             <Button
                 className={styles.button}
-                text="Verify"
-                loading={generatingVerification}
+                text="Verify in Browser"
+                disabled={!proofDone}
+                loading={generatingInBrowserVerification}
                 loadingText="Verifying..."
-                onClick={doVerify}
+                onClick={doInBrowserVerify}
+            />
+        );
+    }
+
+    function VerifyOnChainButton() {
+        return (
+            <Button
+                className={styles.button}
+                text="Verify on chain"
+                disabled={!proofDone}
+                loading={generatingOnChainVerification}
+                loadingText="Verifying..."
+                onClick={doOnChainVerify}
             />
         );
     }
@@ -217,12 +298,33 @@ export function MNISTDraw() {
     function ProofBlock() {
         return (
             <div className="proof">
-                <CopyBlock
-                    text={JSON.stringify(proof, null, 4)}
-                    language="json"
-                    theme={dracula}
+                <Button
+                    className="w-auto"
+                    type='submit'
+                    onClick={() => utils.handleFileDownload('test.pf', buffer!)}
+                    text="Download Proof File"
                 />
-            </div>
+                <Button
+                    className="w-auto"
+                    onClick={() => props.setOpenModal('default')}
+                    data-modal-target="witness-modal"
+                    data-modal-toggle="witness-modal"
+                    text="Show Proof"
+                />
+                <Modal
+                    show={props.openModal === 'default'}
+                    onClose={() => props.setOpenModal(undefined)}
+                >
+                    <Modal.Header>Proof: </Modal.Header>
+                    <Modal.Body className="bg-black">
+                        <div className='mt-4 p-4 bg-black-100 rounded'>
+                            <pre className='blackspace-pre-wrap'>
+                                {stringify(proof, null, 6)}
+                            </pre>
+                        </div>
+                    </Modal.Body>
+                </Modal>
+            </div >
         );
     }
 
@@ -235,28 +337,46 @@ export function MNISTDraw() {
         );
     }
 
-    function VerifyBlock() {
+    function VerifyInBrowserBlock() {
         return (
             <div className="verify">
-                <h2>Verified by on-chain smart contract: {JSON.stringify(isVerified)}</h2>
+                <h1 className='text-2xl'>Verified in the browser: {JSON.stringify(isVerifiedInBrowser)}</h1>
             </div>
         );
     }
 
+    function VerifyOnChainBlock() {
+        return (
+            <div className="verify">
+                <h1 className='text-2xl'>
+                    Verified by on chain smart { }
+                    <a href={`https://mumbai.polygonscan.com/address/${address}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>
+                        contract
+                    </a>: {JSON.stringify(isVerifiedOnChain)}
+                </h1>
+            </div>
+
+        );
+    }
+
     return (
-        <div className="MNISTPage">
-            <h2>Draw and classify a digit</h2>
-            <div className="container">
+        <>
+            <div className="MNISTPage">
+                <h1 className='text-2xl'>Draw and classify a digit</h1>
                 <MNISTBoard grid={grid} onChange={(r, c) => handleSetSquare(r, c)} />
                 <div className="buttonPanel">
                     <ProofButton />
-                    <VerifyButton />
+                    <VerifyInBrowserButton />
+                    <VerifyOnChainButton />
                     <ResetButton />
                 </div>
+                {predictionDone && PredictionBlock()}
+                {proofDone && ProofBlock()}
+                {verifyInBrowserDone && VerifyInBrowserBlock()}
+                {verifyOnChainDone && VerifyOnChainBlock()}
             </div>
-            {predictionDone && PredictionBlock()}
-            {proofDone && ProofBlock()}
-            {verifyDone && VerifyBlock()}
-        </div>
+            <div>
+            </div>
+        </>
     );
 };

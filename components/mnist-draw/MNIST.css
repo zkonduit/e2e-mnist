@@ -16,7 +16,6 @@ main {
 }
 
 .MNISTBoard {
-  /* margin-left: 0cm */
   display: flex;
   flex-direction: column;
   justify-content: center;

@@ -4,14 +4,14 @@
             "val": 0.0,
             "scale": 1.0
         },
-        "input_scale": 0,
-        "param_scale": 0,
+        "input_scale": 1,
+        "param_scale": 1,
         "scale_rebase_multiplier": 10,
         "lookup_range": [
-            0,
-            0
+            -80,
+            32
         ],
-        "logrows": 10,
+        "logrows": 12,
         "num_inner_cols": 1,
         "variables": [
             [
@@ -23,9 +23,9 @@
         "output_visibility": "Public",
         "param_visibility": "Fixed"
     },
-    "num_rows": 799,
-    "total_assignments": 799,
-    "total_const_size": 22,
+    "num_rows": 3146,
+    "total_assignments": 3146,
+    "total_const_size": 2224,
     "model_instance_shapes": [
         [
             1,
@@ -33,10 +33,10 @@
         ]
     ],
     "model_output_scales": [
-        0
+        3
     ],
     "model_input_scales": [
-        0
+        1
     ],
     "module_sizes": {
         "kzg": [],
@@ -57,6 +57,6 @@
         "ReLU"
     ],
     "check_mode": "UNSAFE",
-    "version": "3.10.0",
+    "version": "4.2.9",
     "num_blinding_factors": null
 }

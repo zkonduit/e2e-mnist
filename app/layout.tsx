@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.scss";
+import "./globals.css";
 import WagmiProvider from "@/providers/wagmi";
 import { SharedResourcesProvider } from "@/providers/ezkl";
 
