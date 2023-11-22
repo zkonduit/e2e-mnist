@@ -348,8 +348,14 @@ export function MNISTDraw() {
     function VerifyOnChainBlock() {
         return (
             <div className="verify">
-                <h1 className='text-2xl'>Verified by on chain smart contract: {JSON.stringify(isVerifiedOnChain)}</h1>
+                <h1 className='text-2xl'>
+                    Verified by on chain smart { }
+                    <a href={`https://mumbai.polygonscan.com/address/${address}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>
+                        contract
+                    </a>: {JSON.stringify(isVerifiedOnChain)}
+                </h1>
             </div>
+
         );
     }
 
