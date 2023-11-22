@@ -7,7 +7,7 @@ import {
   verify,
   genWitness,
   genVk,
-  genPk,
+  genPk
 } from "@ezkljs/engine/web";
 import localEVMVerify from "@ezkljs/verify";
 import { Hardfork } from "@ezkljs/verify";

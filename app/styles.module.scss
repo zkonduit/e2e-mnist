@@ -1,0 +1,40 @@
+@import "@/app/constants.scss";
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  width: 100%;
+  flex-direction: column;
+  gap: 30px;
+  color: white;
+
+  .image {
+    width: 300px;
+    height: 300px;
+    position: relative;
+  }
+
+  .prediction__label {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 10px 0;
+    text-align: center;
+  }
+
+  .prediction__value {
+    font-size: 5rem;
+    font-weight: 700;
+    margin: 10px 0;
+    text-align: center;
+  }
+
+  .buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .button {}
+  }
+}

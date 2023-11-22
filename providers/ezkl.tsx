@@ -28,8 +28,8 @@ interface SharedResourcesProviderProps {
 export const SharedResourcesProvider: React.FC<
   SharedResourcesProviderProps
 > = ({ children }) => {
-  const [engine, setEngine] = useState<any>(null); // Replace 'any' with the actual type of 'engine'
-  const [utils, setUtils] = useState<any>(null); // Replace 'any' with the actual type of 'utils'
+  const [engine, setEngine] = useState<Engine>();
+  const [utils, setUtils] = useState<Utils>();
 
   useEffect(() => {
     async function initializeResources() {
@@ -49,9 +49,13 @@ export const SharedResourcesProvider: React.FC<
     initializeResources();
   }, []);
 
+  if (!engine || !utils) {
+    return null;
+  }
+
   return (
     <SharedResourcesContext.Provider value={{ engine, utils }}>
       {children}
-    </SharedResourcesContext.Provider>
+    </SharedResourcesContext.Provider >
   );
 };
