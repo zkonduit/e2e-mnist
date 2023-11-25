@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import WagmiProvider from "@/providers/wagmi";
 import { SharedResourcesProvider } from "@/providers/ezkl";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Secret ID",
@@ -18,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body>
         <SharedResourcesProvider>
           <WagmiProvider>{children}</WagmiProvider>
         </SharedResourcesProvider>

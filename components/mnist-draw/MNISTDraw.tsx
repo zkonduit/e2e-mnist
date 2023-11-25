@@ -9,7 +9,6 @@ import { useSharedResources } from "@/providers/ezkl";
 import { Button } from "@/components/button/Button";
 import styles from "../../app/styles.module.scss";
 import { stringify } from "json-bigint";
-import { usePublicClient } from 'wagmi';
 import { getContract } from 'wagmi/actions';
 import { publicProvider } from 'wagmi/providers/public';
 const size = 28;
@@ -152,17 +151,14 @@ export function MNISTDraw() {
         }
         let witnessSer
         try {
-            const { output, executionTime } = await utils.handleGenWitnessButton(
+            const { output, } = await utils.handleGenWitnessButton(
                 imgTensor
             );
             witnessSer = output
             let witness = engine.deserialize(output);
             const prediction = getPrediction(witness.outputs);
             setPrediction(prediction);
-            console.log("prediction", prediction);
             setPredictionDone(true);
-            console.log("witness", JSON.stringify(witness, null, 4));
-            console.log("witness", witness);
         } catch (error) {
             console.error("An error occurred:", error);
         }
@@ -178,7 +174,6 @@ export function MNISTDraw() {
         let instances = [];
         console.log("proof instances", proof.instances);
         for (let i = 0; i < proof.instances[0].length; i++) {
-            console.log("proof instance", proof.instances[0][i])
             let intSerialized = engine.serialize(proof.instances[0][i]);
             let intHex = engine.vecU64ToFelt(intSerialized);
             let int = BigInt(intHex).toString();
@@ -360,23 +355,19 @@ export function MNISTDraw() {
     }
 
     return (
-        <>
-            <div className="MNISTPage">
-                <h1 className='text-2xl'>Draw and classify a digit</h1>
-                <MNISTBoard grid={grid} onChange={(r, c) => handleSetSquare(r, c)} />
-                <div className="buttonPanel">
-                    <ProofButton />
-                    <VerifyInBrowserButton />
-                    <VerifyOnChainButton />
-                    <ResetButton />
-                </div>
-                {predictionDone && PredictionBlock()}
-                {proofDone && ProofBlock()}
-                {verifyInBrowserDone && VerifyInBrowserBlock()}
-                {verifyOnChainDone && VerifyOnChainBlock()}
+        <div className="MNISTPage">
+            <h1 className='text-2xl'>Draw and classify a digit</h1>
+            <MNISTBoard grid={grid} onChange={(r, c) => handleSetSquare(r, c)} />
+            <div className="buttonPanel">
+                <ProofButton />
+                <VerifyInBrowserButton />
+                <VerifyOnChainButton />
+                <ResetButton />
             </div>
-            <div>
-            </div>
-        </>
+            {predictionDone && PredictionBlock()}
+            {proofDone && ProofBlock()}
+            {verifyInBrowserDone && VerifyInBrowserBlock()}
+            {verifyOnChainDone && VerifyOnChainBlock()}
+        </div>
     );
 };
