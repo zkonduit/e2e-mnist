@@ -85,48 +85,6 @@ main {
   background-color: #FFFFFF;
 }
 
-.imgSquare {
-  float: center;
-  position: relative;
-  width: 8vw;
-  height: 8vw;
-  margin: 0%;
-  overflow: hidden;
-  background-color: #FFFFFF;
-}
-
-.imgSquareDigit {
-  float: center;
-  position: relative;
-  width: 12vw;
-  height: 12vw;
-  margin: 0%;
-  overflow: hidden;
-  background-color: #FFFFFF;
-}
-
-input[type=checkbox] {
-  display: none;
-  box-shadow: none !important;
-}
-
-input[type=checkbox]:checked+label {
-  opacity: 0.5;
-  outline: 0;
-}
-
-:checked+label:before {
-  /* content: "✓"; */
-  /* TODO: cant figure out how to get this to overlay on top */
-  opacity: 1;
-  background-color: white;
-  outline: 0;
-}
-
-.imgSquareDigit:hover {
-  opacity: 0.5;
-}
-
 .square.on {
   background-color: #1E1E1E;
 }
