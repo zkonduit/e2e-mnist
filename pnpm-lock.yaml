@@ -8,6 +8,9 @@ dependencies:
   '@ezkljs/engine':
     specifier: ^4.2.9
     version: 4.2.9
+  '@ezkljs/hub':
+    specifier: ^0.2.0
+    version: 0.2.0
   '@ezkljs/verify':
     specifier: ^0.0.9
     version: 0.0.9
@@ -722,6 +725,13 @@ packages:
     dependencies:
       '@types/json-bigint': 1.0.4
       json-bigint: 1.0.0
+    dev: false
+
+  /@ezkljs/hub@0.2.0:
+    resolution: {integrity: sha512-fueROJhyixMQwN88xEsEoD7VDAmGK/HiCgS5VgIRDn9v/jwLCLKWX4JWs4RrXw8/ckbxog7Oqy43ToE4v4yLyQ==}
+    dependencies:
+      json-bigint: 1.0.0
+      zod: 3.22.4
     dev: false
 
   /@ezkljs/verify@0.0.9:
@@ -7627,6 +7637,10 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
+
+  /zod@3.22.4:
+    resolution: {integrity: sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==}
+    dev: false
 
   /zustand@4.4.6(@types/react@18.2.37)(react@18.2.0):
     resolution: {integrity: sha512-Rb16eW55gqL4W2XZpJh0fnrATxYEG3Apl2gfHTyDSE965x/zxslTikpNch0JgNjJA9zK6gEFW8Fl6d1rTZaqgg==}
