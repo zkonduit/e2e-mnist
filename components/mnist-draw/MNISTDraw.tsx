@@ -102,6 +102,7 @@ const MNISTBoard: FC<IMNISTBoardProps> = ({ grid, onChange }) => {
 }
 
 export function MNISTDraw() {
+  const [artifactId, setArtifactId] = useState<string>('')
   const { engine, utils } = useSharedResources()
   const [openModal, setOpenModal] = useState<string | undefined>()
   const props = { openModal, setOpenModal }
@@ -127,6 +128,15 @@ export function MNISTDraw() {
       .fill(null)
       .map(() => Array(size).fill(0))
   ) // initialize to a 28x28 array of 0's
+
+  const parseInputs = (inputs: string[]) => {
+    const convertedInputs = []
+    for (let item of inputs) {
+      const result = BigInt(item)
+      convertedInputs.push(result)
+    }
+    return convertedInputs
+  }
 
   const parseOutput = (output: any[][]) => {
     const convertedOutput = []
@@ -154,7 +164,8 @@ export function MNISTDraw() {
       }
     }
 
-    const artifactId = 'c1cb0bea-5b9d-421c-89a8-65b8886d6251'
+    // const artifactId = 'c1cb0bea-5b9d-421c-89a8-65b8886d6251'
+    // const artifactId = '88676bfc-8421-48d1-84a7-8551216397cf'
     const inputFile = JSON.stringify({ input_data: [imgTensor] })
     const url = 'https://hub-staging.ezkl.xyz/graphql'
 
@@ -169,10 +180,11 @@ export function MNISTDraw() {
       let { status } = initiateProofResp
       const { id } = initiateProofResp
 
+      let getProofResp
       while (status !== 'SUCCESS') {
         await new Promise((resolve) => setTimeout(resolve, 2000))
 
-        const getProofResp = await hub.getProof({
+        getProofResp = await hub.getProof({
           id,
           url,
         })
@@ -180,6 +192,34 @@ export function MNISTDraw() {
         status = getProofResp.status
         console.log('getProofResp', getProofResp)
       }
+
+      const results = getProofResp?.instances?.map((instance) =>
+        BigInt(instance)
+      )
+      console.log('results', results)
+
+      if (!results || results.length === 0) {
+        throw new Error('Array is empty')
+      }
+
+      // find the the index of the max value of the results array which contains BigInts
+      // const index = results?.indexOf(results.reduce((a, b) => (a > b ? a : b)))
+      if (results.length === 0) {
+        throw new Error('Array is empty')
+      }
+
+      let maxIndex = 0
+      let maxValue = results[0] // Assuming results is a non-empty array of BigInts
+
+      for (let i = 1; i < results.length; i++) {
+        if (results[i] > maxValue) {
+          maxValue = results[i]
+          maxIndex = i
+        }
+      }
+      console.log('maxIndex', maxIndex)
+
+      // console.log('index', index)
     } catch (error) {
       console.log('error', error)
     }
@@ -400,6 +440,16 @@ export function MNISTDraw() {
     <div className='MNISTPage'>
       <h1 className='text-2xl'>Draw and classify a digit</h1>
       <MNISTBoard grid={grid} onChange={(r, c) => handleSetSquare(r, c)} />
+      <input
+        className='m-auto w-3/12 mt-5'
+        type='text'
+        value={artifactId}
+        placeholder='Artifact ID'
+        onChange={(e) => {
+          // console.log('artifactId', artifactId)
+          setArtifactId(e.target.value)
+        }}
+      />
       <div className='buttonPanel'>
         <ProofButton />
         <VerifyInBrowserButton />
