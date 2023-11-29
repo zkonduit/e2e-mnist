@@ -1,17 +1,23 @@
 "use client";
 
 import { WagmiConfig, configureChains, createConfig } from "wagmi";
-import { polygonMumbai } from 'viem/chains'
-import { publicProvider } from 'wagmi/providers/public'
+import { optimism } from "wagmi/chains";
+import { alchemyProvider } from "wagmi/providers/alchemy";
 
-const { publicClient } = configureChains(
-  [polygonMumbai],
-  [publicProvider()]
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+  [optimism],
+  [
+    alchemyProvider({
+      apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
+    }),
+  ]
 );
 
 const config = createConfig({
-  publicClient
-});
+  autoConnect: true,
+  publicClient,
+  webSocketPublicClient
+})
 
 export default function WagmiProvider({
   children,

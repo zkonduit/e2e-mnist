@@ -9,37 +9,126 @@ import styles from '../../app/styles.module.scss'
 import { stringify } from 'json-bigint'
 import { getContract } from 'wagmi/actions'
 import { publicProvider } from 'wagmi/providers/public'
+import { useAccount, useConnect, usePrepareContractWrite, useContractWrite, useWaitForTransaction, useDisconnect } from 'wagmi'
+import { InjectedConnector } from 'wagmi/connectors/injected'
 import hub from '@ezkljs/hub'
 const size = 28
 const MNISTSIZE = 784
 
-const address = '0xAB5d009d3dcbdCB8432e53cde6BeF4A38Db7Bdc4'
+const address = '0xe88e59063a5b1aA6cA20733B6DF414676Ee49Bc4'
 
 const abi = [
     {
-        inputs: [
+        "inputs": [
             {
-                internalType: 'bytes',
-                name: 'proof',
-                type: 'bytes',
+                "internalType": "bytes",
+                "name": "proof",
+                "type": "bytes"
             },
             {
-                internalType: 'uint256[]',
-                name: 'instances',
-                type: 'uint256[]',
-            },
+                "internalType": "uint256[]",
+                "name": "instances",
+                "type": "uint256[]"
+            }
         ],
-        name: 'verifyProof',
-        outputs: [
-            {
-                internalType: 'bool',
-                name: '',
-                type: 'bool',
-            },
-        ],
-        stateMutability: 'view',
-        type: 'function',
+        "name": "submitDigit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     },
+    {
+        "inputs": [
+            {
+                "internalType": "contract Verifier",
+                "name": "_verifier",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_admin",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "admin",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint8",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "name": "counts",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "entered",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getCounts",
+        "outputs": [
+            {
+                "internalType": "uint256[10]",
+                "name": "",
+                "type": "uint256[10]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "verifier",
+        "outputs": [
+            {
+                "internalType": "contract Verifier",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
 ]
 
 interface IMNISTBoardProps {
@@ -102,7 +191,6 @@ const MNISTBoard: FC<IMNISTBoardProps> = ({ grid, onChange }) => {
 }
 
 export function MNISTDraw() {
-    const [artifactId, setArtifactId] = useState<string>('')
     const { engine, utils } = useSharedResources()
     const [openModal, setOpenModal] = useState<string | undefined>()
     const props = { openModal, setOpenModal }
@@ -110,24 +198,74 @@ export function MNISTDraw() {
     const [proof, setProof] = useState<any | null>(null)
     const [buffer, setBuffer] = useState<Uint8Array | null>(null) // proof file buffer
     const [generatingProof, setGeneratingProof] = useState(false)
+    const [counts, setCounts] = useState<any | null>(null)
     // On chain verification states
     const [generatingOnChainVerification, setGeneratingOnChainVerification] =
         useState(false)
-    const [isVerifiedOnChain, setIsVerifiedOnChain] = useState(false)
-    const [verifyOnChainDone, setVerifyOnChainDone] = useState(false)
-    // In browser verification states
-    const [generatingInBrowserVerification, setGeneratingInBrowserVerification] =
-        useState(false)
-    const [isVerifiedInBrowser, setIsVerifiedInBrowser] = useState(false)
-    const [verifyInBrowserDone, setVerifyInBrowserDone] = useState(false)
 
     const [proofDone, setProofDone] = useState(false)
-    const [predictionDone, setPredictionDone] = useState(false)
     const [grid, setGrid] = useState<number[][]>(
         Array(size)
             .fill(null)
             .map(() => Array(size).fill(0))
     ) // initialize to a 28x28 array of 0's
+
+    const { isConnected } = useAccount()
+    const { connect } = useConnect({
+        connector: new InjectedConnector(),
+    })
+    const { disconnect } = useDisconnect()
+
+    const {
+        config,
+        error: prepareError,
+        isError: isPrepareError,
+    } = usePrepareContractWrite({
+        address: "0xe88e59063a5b1aA6cA20733B6DF414676Ee49Bc4",
+        abi: [
+            {
+                name: 'submitDigit',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [
+                    {
+                        "internalType": "bytes",
+                        "name": "proof",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "instances",
+                        "type": "uint256[]"
+                    }
+                ],
+                outputs: [],
+            },
+        ],
+        functionName: 'submitDigit',
+        args: [
+            proof?.proof,
+            proof?.instances
+        ],
+        enabled: true,
+    })
+    const { data, error, isError, write } = useContractWrite(config)
+    const { isLoading, isSuccess } = useWaitForTransaction({
+        hash: data?.hash,
+    })
+
+    // Replace with your contract's ABI and address
+
+    const provider = publicProvider()
+
+    // Instantiate the contract using wagmi's getContract hook
+    const contract = getContract({
+        address: "0xe88e59063a5b1aA6cA20733B6DF414676Ee49Bc4",
+        abi: abi,
+        walletClient: provider,
+        chainId: 10,
+    })
+
 
     const parseOutput = (output: any[][]) => {
         const convertedOutput = []
@@ -139,12 +277,6 @@ export function MNISTDraw() {
         return convertedOutput
     }
 
-    const getPrediction = (output: any[][]) => {
-        const convertedOutput = parseOutput(output)
-        console.log('convertedOutput', convertedOutput)
-        const index = convertedOutput.indexOf(Math.max(...convertedOutput))
-        return index
-    }
 
     async function doProof() {
         // get image from grid
@@ -160,6 +292,7 @@ export function MNISTDraw() {
 
         const url = 'https://hub-staging.ezkl.xyz/graphql'
 
+        const artifactId = "04c04f68-0420-488a-8335-203a035b9d88"
         setGeneratingProof(true)
         try {
             const initiateProofResp = await hub.initiateProof({
@@ -186,13 +319,14 @@ export function MNISTDraw() {
                 }
                 await new Promise((resolve) => setTimeout(resolve, 2_000))
             }
-            // console.log('getProofResp', getProofResp)
+            console.log('getProofResp', getProofResp?.instances)
 
             const p = BigInt(
                 '0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001'
             )
             setProof(getProofResp)
             console.log('proof', JSON.stringify(getProofResp?.instances))
+            console.log("proof", getProofResp?.proof)
             const results = getProofResp?.instances?.map((instance) => {
                 const bigInst = BigInt(instance)
                 // is negative
@@ -203,7 +337,7 @@ export function MNISTDraw() {
                 }
             })
 
-            // console.log('results', results)
+            console.log('results', results)
 
             if (!results || results.length === 0) {
                 throw new Error('Array is empty')
@@ -224,7 +358,7 @@ export function MNISTDraw() {
                     maxIndex = i
                 }
             }
-            console.log('maxIndex', maxIndex)
+            setPrediction(maxIndex)
             setProofDone(true)
             // console.log('index', index)
         } catch (error) {
@@ -233,43 +367,10 @@ export function MNISTDraw() {
         setGeneratingProof(false)
     }
 
-    async function doInBrowserVerify() {
-        const { output, executionTime } = await utils.handleVerifyButton(
-            new Uint8ClampedArray(buffer!)
-        )
-        console.log(`Verifying in browser time: ${executionTime}ms`)
-        setIsVerifiedInBrowser(output)
-        setVerifyInBrowserDone(true)
-    }
 
     async function doOnChainVerify() {
-        // Replace with your contract's ABI and address
-
-        const provider = publicProvider()
-
-        // Instantiate the contract using wagmi's getContract hook
-        const contract = getContract({
-            address: address,
-            abi: abi,
-            walletClient: provider,
-            chainId: 80001,
-        })
-
-        try {
-            let result: boolean
-            result = (await contract.read.verifyProof([
-                `0x${proof.proof}`,
-                proof.instances,
-            ])) as boolean
-
-            setIsVerifiedOnChain(result)
-            setVerifyOnChainDone(true)
-        } catch (error) {
-            // window error popup
-            window.alert(`Verification failed with error: ${error}`)
-            console.log(`Verification failed with error: ${error}`)
-            setVerifyOnChainDone(false)
-        }
+        if (!write) { return }
+        write()
     }
 
     function resetImage() {
@@ -277,10 +378,7 @@ export function MNISTDraw() {
             .fill(null)
             .map((_) => Array(size).fill(0))
         setGrid(newArray)
-        setPredictionDone(false)
         setProofDone(false)
-        setVerifyInBrowserDone(false)
-        setVerifyOnChainDone(false)
     }
 
     function handleSetSquare(myrow: number, mycol: number) {
@@ -302,30 +400,27 @@ export function MNISTDraw() {
         )
     }
 
-    function VerifyInBrowserButton() {
-        return (
-            <Button
-                className={styles.button}
-                text='Verify in Browser'
-                disabled={!proofDone}
-                loading={generatingInBrowserVerification}
-                loadingText='Verifying...'
-                onClick={doInBrowserVerify}
-            />
-        )
-    }
-
     function VerifyOnChainButton() {
         return (
             <Button
                 className={styles.button}
                 text='Verify on chain'
-                disabled={!proofDone}
-                loading={generatingOnChainVerification}
+                disabled={!proofDone || !write || isLoading}
+                loading={isLoading}
                 loadingText='Verifying...'
                 onClick={doOnChainVerify}
             />
         )
+    }
+
+    function ConnectWalletButton() {
+        if (isConnected)
+            return (
+                <div>
+                    <Button text='Disconnect' className={styles.button} onClick={() => disconnect()} />
+                </div >
+            )
+        return <Button text='Connect' className={styles.button} onClick={() => connect()}>Connect Wallet</Button>
     }
 
     function ResetButton() {
@@ -376,14 +471,10 @@ export function MNISTDraw() {
         )
     }
 
-    function VerifyInBrowserBlock() {
-        return (
-            <div className='verify'>
-                <h1 className='text-2xl'>
-                    Verified in the browser: {JSON.stringify(isVerifiedInBrowser)}
-                </h1>
-            </div>
-        )
+    async function getCounts() {
+        let result = await contract.read.getCounts()
+        result = stringify(result)
+        setCounts(result);
     }
 
     function VerifyOnChainBlock() {
@@ -392,43 +483,47 @@ export function MNISTDraw() {
                 <h1 className='text-2xl'>
                     Verified by on chain smart { }
                     <a
-                        href={`https://mumbai.polygonscan.com/address/${address}`}
+                        href={`https://optimistic.etherscan.io/address/0x2619aed377c6fc5bdc56d30a4347406de9cd2a2c`}
                         target='_blank'
                         rel='noopener noreferrer'
                         style={{ textDecoration: 'underline' }}
                     >
                         contract
                     </a>
-                    : {JSON.stringify(isVerifiedOnChain)}
+                </h1>
+                <h1 className='text-2xl'>
+                    <Button
+                        className={styles.button}
+                        onClick={async () => await getCounts()}
+                        data-modal-target='witness-modal'
+                        data-modal-toggle='witness-modal'
+                        text='Show MNIST Clan Digit results'
+                    />
+                </h1>
+                <h1 className='text-2xl'>
+                    {counts}
                 </h1>
             </div>
         )
+    }
+
+    if (isPrepareError || isError) {
+        window.alert(`Transaction Failed: ${(prepareError || error)?.message}`)
     }
 
     return (
         <div className='MNISTPage'>
             <h1 className='text-2xl'>Draw and classify a digit</h1>
             <MNISTBoard grid={grid} onChange={(r, c) => handleSetSquare(r, c)} />
-            <input
-                className='m-auto w-3/12 mt-5'
-                type='text'
-                value={artifactId}
-                placeholder='Artifact ID'
-                onChange={(e) => {
-                    // console.log('artifactId', artifactId)
-                    setArtifactId(e.target.value)
-                }}
-            />
             <div className='buttonPanel'>
+                {proofDone && <ConnectWalletButton />}
                 <ProofButton />
-                <VerifyInBrowserButton />
                 <VerifyOnChainButton />
                 <ResetButton />
             </div>
-            {predictionDone && PredictionBlock()}
+            {proofDone && PredictionBlock()}
             {proofDone && ProofBlock()}
-            {verifyInBrowserDone && VerifyInBrowserBlock()}
-            {verifyOnChainDone && VerifyOnChainBlock()}
+            {isSuccess && VerifyOnChainBlock()}
         </div>
     )
 }
