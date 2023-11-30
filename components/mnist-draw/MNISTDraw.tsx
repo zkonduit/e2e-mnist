@@ -10,12 +10,11 @@ import { stringify } from 'json-bigint'
 import { getContract } from 'wagmi/actions'
 import { publicProvider } from 'wagmi/providers/public'
 import { useAccount, useConnect, usePrepareContractWrite, useContractWrite, useWaitForTransaction, useDisconnect } from 'wagmi'
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { InjectedConnector } from 'wagmi/connectors/injected'
 import hub from '@ezkljs/hub'
 const size = 28
 const MNISTSIZE = 784
-
-const address = '0xe88e59063a5b1aA6cA20733B6DF414676Ee49Bc4'
 
 const abi = [
     {
@@ -221,7 +220,7 @@ export function MNISTDraw() {
         error: prepareError,
         isError: isPrepareError,
     } = usePrepareContractWrite({
-        address: "0xe88e59063a5b1aA6cA20733B6DF414676Ee49Bc4",
+        address: "0xF2d8d184CeCf3c04FA1ea35A409c3de98146cbBF",
         abi: [
             {
                 name: 'submitDigit',
@@ -260,22 +259,11 @@ export function MNISTDraw() {
 
     // Instantiate the contract using wagmi's getContract hook
     const contract = getContract({
-        address: "0xe88e59063a5b1aA6cA20733B6DF414676Ee49Bc4",
+        address: "0xF2d8d184CeCf3c04FA1ea35A409c3de98146cbBF",
         abi: abi,
         walletClient: provider,
-        chainId: 10,
+        chainId: 420,
     })
-
-
-    const parseOutput = (output: any[][]) => {
-        const convertedOutput = []
-        for (let item of output[0]) {
-            const result = engine.vecU64ToInt(engine.serialize(item))
-            const resultInt = engine.deserialize(result)
-            convertedOutput.push(resultInt)
-        }
-        return convertedOutput
-    }
 
 
     async function doProof() {
@@ -413,16 +401,6 @@ export function MNISTDraw() {
         )
     }
 
-    function ConnectWalletButton() {
-        if (isConnected)
-            return (
-                <div>
-                    <Button text='Disconnect' className={styles.button} onClick={() => disconnect()} />
-                </div >
-            )
-        return <Button text='Connect' className={styles.button} onClick={() => connect()}>Connect Wallet</Button>
-    }
-
     function ResetButton() {
         return (
             <Button className={styles.button} text='Reset' onClick={resetImage} />
@@ -483,7 +461,7 @@ export function MNISTDraw() {
                 <h1 className='text-2xl'>
                     Verified by on chain smart { }
                     <a
-                        href={`https://optimistic.etherscan.io/address/0x2619aed377c6fc5bdc56d30a4347406de9cd2a2c`}
+                        href={`https://goerli-optimism.etherscan.io/address/0xdec7348eea1755ad74bc506af55d4de3f5128284#code`}
                         target='_blank'
                         rel='noopener noreferrer'
                         style={{ textDecoration: 'underline' }}
@@ -507,16 +485,14 @@ export function MNISTDraw() {
         )
     }
 
-    if (isPrepareError || isError) {
-        window.alert(`Transaction Failed: ${(prepareError || error)?.message}`)
-    }
-
     return (
         <div className='MNISTPage'>
             <h1 className='text-2xl'>Draw and classify a digit</h1>
             <MNISTBoard grid={grid} onChange={(r, c) => handleSetSquare(r, c)} />
+            <div className='flex justify-center pt-7'>
+                <ConnectButton />
+            </div>
             <div className='buttonPanel'>
-                {proofDone && <ConnectWalletButton />}
                 <ProofButton />
                 <VerifyOnChainButton />
                 <ResetButton />
