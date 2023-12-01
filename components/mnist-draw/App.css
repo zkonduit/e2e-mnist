@@ -54,3 +54,17 @@ body {
 .color-white {
   color: white;
 }
+
+.MNISTClanChart {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.chart-container {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  width: 900px;
+}

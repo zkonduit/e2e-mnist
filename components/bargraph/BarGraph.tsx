@@ -31,6 +31,18 @@ const BarGraph: React.FC<BarGraphProps> = ({ data }) => {
                 display: true,
             },
         },
+        scales: {
+            x: {
+                grid: {
+                    color: 'grey' // Change grid line color for x-axis
+                }
+            },
+            y: {
+                grid: {
+                    color: 'grey' // Change grid line color for y-axis
+                }
+            }
+        }
     };
 
     const labels = Array.from({ length: 10 }, (_, i) => i.toString());

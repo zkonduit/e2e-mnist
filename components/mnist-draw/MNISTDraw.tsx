@@ -292,10 +292,12 @@ export function MNISTDraw() {
         }
         return (
             <div>
-                <h1 className='text-2xl'>
-                    Clan Counts:
-                </h1>
-                <BarGraph data={counts} />
+                <div className="MNISTClanChart">
+                    <div className="chart-container">
+                        <BarGraph data={counts} />
+                    </div>
+                </div>
+
             </div>
         )
     }
