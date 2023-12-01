@@ -1,6 +1,6 @@
 'use client'
 import { Modal } from 'flowbite-react'
-import { useState, FC } from 'react'
+import { useState, useEffect, FC } from 'react'
 import './MNIST.css'
 import './App.css'
 import { useSharedResources } from '@/providers/ezkl'
@@ -11,7 +11,8 @@ import { getContract } from 'wagmi/actions'
 import { publicProvider } from 'wagmi/providers/public'
 import { useAccount, useConnect, usePrepareContractWrite, useContractWrite, useWaitForTransaction, useDisconnect } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { InjectedConnector } from 'wagmi/connectors/injected'
+import type { NextPage } from 'next';
+import BarGraph from '../bargraph/BarGraph'; // Adjust the path as necessary
 import hub from '@ezkljs/hub'
 const size = 28
 const MNISTSIZE = 784
@@ -20,64 +21,17 @@ const abi = [
     {
         "inputs": [
             {
-                "internalType": "bytes",
-                "name": "proof",
-                "type": "bytes"
-            },
-            {
-                "internalType": "uint256[]",
-                "name": "instances",
-                "type": "uint256[]"
-            }
-        ],
-        "name": "submitDigit",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "contract Verifier",
-                "name": "_verifier",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_admin",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
-        "inputs": [],
-        "name": "admin",
-        "outputs": [
-            {
                 "internalType": "address",
                 "name": "",
                 "type": "address"
             }
         ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
+        "name": "clan",
+        "outputs": [
             {
                 "internalType": "uint8",
                 "name": "",
                 "type": "uint8"
-            }
-        ],
-        "name": "counts",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -116,6 +70,24 @@ const abi = [
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "bytes",
+                "name": "proof",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "instances",
+                "type": "uint256[]"
+            }
+        ],
+        "name": "submitDigit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "verifier",
         "outputs": [
@@ -129,6 +101,29 @@ const abi = [
         "type": "function"
     }
 ]
+
+function handleFileDownload(fileName: string, buffer: Uint8Array) {
+    // Create a blob from the buffer
+    const blob = new Blob([buffer], { type: "application/octet-stream" });
+
+    // Create an Object URL from the blob
+    const url = window.URL.createObjectURL(blob);
+
+    // Create an anchor element for the download
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+
+    // Trigger the download by simulating a click on the anchor element
+    a.click();
+
+    // Remove the anchor element after download
+    document.body.removeChild(a);
+
+    // Free up the Object URL
+    window.URL.revokeObjectURL(url);
+}
 
 interface IMNISTBoardProps {
     grid: number[][]
@@ -190,17 +185,16 @@ const MNISTBoard: FC<IMNISTBoardProps> = ({ grid, onChange }) => {
 }
 
 export function MNISTDraw() {
-    const { engine, utils } = useSharedResources()
+    const { utils } = useSharedResources()
     const [openModal, setOpenModal] = useState<string | undefined>()
     const props = { openModal, setOpenModal }
     const [prediction, setPrediction] = useState<number>(-1)
     const [proof, setProof] = useState<any | null>(null)
     const [buffer, setBuffer] = useState<Uint8Array | null>(null) // proof file buffer
     const [generatingProof, setGeneratingProof] = useState(false)
-    const [counts, setCounts] = useState<any | null>(null)
-    // On chain verification states
-    const [generatingOnChainVerification, setGeneratingOnChainVerification] =
-        useState(false)
+    const [counts, setCounts] = useState<number[] | null>(null)
+    const [clan, setClan] = useState<number | null>(null)
+    const [verifyResult, setVerifyResult] = useState<boolean | null>(null)
 
     const [proofDone, setProofDone] = useState(false)
     const [grid, setGrid] = useState<number[][]>(
@@ -209,18 +203,12 @@ export function MNISTDraw() {
             .map(() => Array(size).fill(0))
     ) // initialize to a 28x28 array of 0's
 
-    const { isConnected } = useAccount()
-    const { connect } = useConnect({
-        connector: new InjectedConnector(),
-    })
-    const { disconnect } = useDisconnect()
+    const { address, isConnected } = useAccount()
 
     const {
-        config,
-        error: prepareError,
-        isError: isPrepareError,
+        config
     } = usePrepareContractWrite({
-        address: "0xF2d8d184CeCf3c04FA1ea35A409c3de98146cbBF",
+        address: "0x2619Aed377C6fC5BdC56d30A4347406dE9cd2A2c",
         abi: [
             {
                 name: 'submitDigit',
@@ -253,17 +241,56 @@ export function MNISTDraw() {
         hash: data?.hash,
     })
 
-    // Replace with your contract's ABI and address
-
     const provider = publicProvider()
 
     // Instantiate the contract using wagmi's getContract hook
     const contract = getContract({
-        address: "0xF2d8d184CeCf3c04FA1ea35A409c3de98146cbBF",
+        address: "0x2619Aed377C6fC5BdC56d30A4347406dE9cd2A2c",
         abi: abi,
-        walletClient: provider,
+        walletClient: publicProvider(),
         chainId: 420,
     })
+
+    useEffect(() => {
+        (async () => {
+            if (isConnected && (!clan || isSuccess)) {
+                async function getAccountClanInfo() {
+                    let entry = await contract.read.entered([address]) as boolean
+                    let clan = await contract.read.clan([address]) as number
+                    setClan(entry ? clan : null)
+                    console.log('entry', entry)
+                    console.log('clan', clan)
+                }
+                async function getClanCounts() {
+                    let counts = await contract.read.getCounts() as number[]
+                    // convert BigInt to number
+                    counts = counts.map((count) => Number(count))
+                    setCounts(counts)
+                    console.log('counts', counts)
+                }
+                getAccountClanInfo()
+                getClanCounts()
+            }
+            if (!isConnected && clan) {
+                setClan(null)
+                setCounts(null)
+            }
+        })()
+    }, [isConnected, isSuccess])
+
+    function ShowClanResultsBlock() {
+        if (!counts) {
+            return
+        }
+        return (
+            <div>
+                <h1 className='text-2xl'>
+                    Clan Counts:
+                </h1>
+                <BarGraph data={counts} />
+            </div>
+        )
+    }
 
 
     async function doProof() {
@@ -357,6 +384,45 @@ export function MNISTDraw() {
 
 
     async function doOnChainVerify() {
+        let abi = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "bytes",
+                        "name": "proof",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "instances",
+                        "type": "uint256[]"
+                    }
+                ],
+                "name": "verifyProof",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ]
+
+        let verifierContract = getContract({
+            address: "0xdEc7348eEa1755Ad74bC506af55d4De3F5128284",
+            abi: abi,
+            walletClient: provider,
+            chainId: 420,
+        })
+
+        let result = await verifierContract.read.verifyProof([proof?.proof, proof?.instances]) as boolean
+        setVerifyResult(result);
+    }
+
+    async function doSubmitMnistDigit() {
         if (!write) { return }
         write()
     }
@@ -367,6 +433,7 @@ export function MNISTDraw() {
             .map((_) => Array(size).fill(0))
         setGrid(newArray)
         setProofDone(false)
+        setVerifyResult(null)
     }
 
     function handleSetSquare(myrow: number, mycol: number) {
@@ -392,11 +459,24 @@ export function MNISTDraw() {
         return (
             <Button
                 className={styles.button}
-                text='Verify on chain'
-                disabled={!proofDone || !write || isLoading}
+                text='Verify On Chain'
+                disabled={!proofDone}
                 loading={isLoading}
                 loadingText='Verifying...'
                 onClick={doOnChainVerify}
+            />
+        )
+    }
+
+    function SubmitMnistDigitButton() {
+        return (
+            <Button
+                className={styles.button}
+                text='Submit Mnist Digit'
+                disabled={!proofDone || !write || isLoading}
+                loading={isLoading}
+                loadingText='Verifying...'
+                onClick={doSubmitMnistDigit}
             />
         )
     }
@@ -413,7 +493,7 @@ export function MNISTDraw() {
                 <Button
                     className='w-auto'
                     type='submit'
-                    onClick={() => utils.handleFileDownload('test.pf', buffer!)}
+                    onClick={() => handleFileDownload('test.pf', buffer!)}
                     text='Download Proof File'
                 />
                 <Button
@@ -443,16 +523,10 @@ export function MNISTDraw() {
     function PredictionBlock() {
         return (
             <div className='predction color-white'>
-                <h2>Prediction</h2>
+                <h1>Prediction</h1>
                 {prediction}
             </div>
         )
-    }
-
-    async function getCounts() {
-        let result = await contract.read.getCounts()
-        result = stringify(result)
-        setCounts(result);
     }
 
     function VerifyOnChainBlock() {
@@ -461,7 +535,7 @@ export function MNISTDraw() {
                 <h1 className='text-2xl'>
                     Verified by on chain smart { }
                     <a
-                        href={`https://goerli-optimism.etherscan.io/address/0xdec7348eea1755ad74bc506af55d4de3f5128284#code`}
+                        href={`https://goerli-optimism.etherscan.io/address/0x2619Aed377C6fC5BdC56d30A4347406dE9cd2A2c#code`}
                         target='_blank'
                         rel='noopener noreferrer'
                         style={{ textDecoration: 'underline' }}
@@ -469,20 +543,12 @@ export function MNISTDraw() {
                         contract
                     </a>
                 </h1>
-                <h1 className='text-2xl'>
-                    <Button
-                        className={styles.button}
-                        onClick={async () => await getCounts()}
-                        data-modal-target='witness-modal'
-                        data-modal-toggle='witness-modal'
-                        text='Show MNIST Clan Digit results'
-                    />
-                </h1>
-                <h1 className='text-2xl'>
-                    {counts}
-                </h1>
             </div>
         )
+    }
+
+    if (proofDone && isError) {
+        window.alert(`Transaction failed on MnistClan contract:${error?.message}`)
     }
 
     return (
@@ -492,14 +558,16 @@ export function MNISTDraw() {
             <div className='flex justify-center pt-7'>
                 <ConnectButton />
             </div>
+            {clan && <h1 className='text-2xl pt-7'>Your MNIST Clan: {clan} </h1>}
             <div className='buttonPanel'>
                 <ProofButton />
-                <VerifyOnChainButton />
+                {clan ? <VerifyOnChainButton /> : <SubmitMnistDigitButton />}
                 <ResetButton />
             </div>
             {proofDone && PredictionBlock()}
             {proofDone && ProofBlock()}
-            {isSuccess && VerifyOnChainBlock()}
+            {(isSuccess || !(verifyResult == null)) && VerifyOnChainBlock()}
+            {clan && ShowClanResultsBlock()}
         </div>
     )
 }
