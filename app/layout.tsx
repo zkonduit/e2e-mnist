@@ -4,8 +4,8 @@ import WagmiProvider from "@/providers/wagmi";
 import { SharedResourcesProvider } from "@/providers/ezkl";
 
 export const metadata: Metadata = {
-  title: "Secret ID",
-  description: "Keep your IDs safe and secure",
+  title: "MNIST Clan",
+  description: "Submit a ZKML proof of your classified handrawn digit to join the clan.",
 };
 
 export default function RootLayout({
