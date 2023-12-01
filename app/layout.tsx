@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import WagmiProvider from "@/providers/wagmi";
-import { SharedResourcesProvider } from "@/providers/ezkl";
 
 export const metadata: Metadata = {
   title: "MNIST Clan",
@@ -16,9 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <SharedResourcesProvider>
-          <WagmiProvider>{children}</WagmiProvider>
-        </SharedResourcesProvider>
+        <WagmiProvider>{children}</WagmiProvider>
       </body>
     </html>
   );

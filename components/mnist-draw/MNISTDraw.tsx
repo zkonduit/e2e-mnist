@@ -3,15 +3,13 @@ import { Modal } from 'flowbite-react'
 import { useState, useEffect, FC } from 'react'
 import './MNIST.css'
 import './App.css'
-import { useSharedResources } from '@/providers/ezkl'
 import { Button } from '@/components/button/Button'
 import styles from '../../app/styles.module.scss'
 import { stringify } from 'json-bigint'
 import { getContract } from 'wagmi/actions'
 import { publicProvider } from 'wagmi/providers/public'
-import { useAccount, useConnect, usePrepareContractWrite, useContractWrite, useWaitForTransaction, useDisconnect } from 'wagmi'
+import { useAccount, usePrepareContractWrite, useContractWrite, useWaitForTransaction } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import type { NextPage } from 'next';
 import BarGraph from '../bargraph/BarGraph'; // Adjust the path as necessary
 import hub from '@ezkljs/hub'
 const size = 28
@@ -136,28 +134,31 @@ const MNISTBoard: FC<IMNISTBoardProps> = ({ grid, onChange }) => {
     const GridSquare = (row: number, col: number) => {
         const handleChange = () => {
             if (mouseDown) {
-                onChange(row, col)
+                onChange(row, col);
             }
-        }
+        };
 
-        const handleMouseDown = () => {
-            setMouseDown(true)
-            onChange(row, col)
-        }
+        const handleInteractionStart = () => {
+            setMouseDown(true);
+            onChange(row, col);
+        };
 
-        const handleMouseUp = () => {
-            setMouseDown(false)
-        }
+        const handleInteractionEnd = () => {
+            setMouseDown(false);
+        };
 
         return (
             <div
                 className={`square ${grid[row][col] ? 'on' : 'off'}`}
                 onMouseEnter={handleChange}
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseUp}
+                onMouseDown={handleInteractionStart}
+                onMouseUp={handleInteractionEnd}
+                onTouchStart={handleInteractionStart}
+                onTouchEnd={handleInteractionEnd}
             />
-        )
-    }
+        );
+    };
+
 
     const renderCol = (col: number) => {
         const mycol = []
@@ -185,7 +186,6 @@ const MNISTBoard: FC<IMNISTBoardProps> = ({ grid, onChange }) => {
 }
 
 export function MNISTDraw() {
-    const { utils } = useSharedResources()
     const [openModal, setOpenModal] = useState<string | undefined>()
     const props = { openModal, setOpenModal }
     const [prediction, setPrediction] = useState<number>(-1)
