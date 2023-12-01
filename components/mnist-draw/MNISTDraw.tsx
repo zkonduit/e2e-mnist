@@ -251,23 +251,24 @@ export function MNISTDraw() {
         chainId: 420,
     })
 
+    async function getAccountClanInfo() {
+        let entry = await contract.read.entered([address]) as boolean
+        let clan = await contract.read.clan([address]) as number
+        setClan(entry ? clan : null)
+        console.log('entry', entry)
+        console.log('clan', clan)
+    }
+    async function getClanCounts() {
+        let counts = await contract.read.getCounts() as number[]
+        // convert BigInt to number
+        counts = counts.map((count) => Number(count))
+        setCounts(counts)
+        console.log('counts', counts)
+    }
+
     useEffect(() => {
         (async () => {
             if (isConnected && (!clan || isSuccess)) {
-                async function getAccountClanInfo() {
-                    let entry = await contract.read.entered([address]) as boolean
-                    let clan = await contract.read.clan([address]) as number
-                    setClan(entry ? clan : null)
-                    console.log('entry', entry)
-                    console.log('clan', clan)
-                }
-                async function getClanCounts() {
-                    let counts = await contract.read.getCounts() as number[]
-                    // convert BigInt to number
-                    counts = counts.map((count) => Number(count))
-                    setCounts(counts)
-                    console.log('counts', counts)
-                }
                 getAccountClanInfo()
                 getClanCounts()
             }
@@ -276,7 +277,14 @@ export function MNISTDraw() {
                 setCounts(null)
             }
         })()
-    }, [isConnected, isSuccess])
+    }, [isConnected, isSuccess, address])
+
+    useEffect(() => {
+        if (isConnected) {
+            setClan(null)
+            setCounts(null)
+        }
+    }, [address, isConnected]);
 
     function ShowClanResultsBlock() {
         if (!counts) {
