@@ -111,6 +111,7 @@ export function MNISTDraw() {
     const [generatingProof, setGeneratingProof] = useState(false)
     const [counts, setCounts] = useState<number[] | null>(null)
     const [clan, setClan] = useState<number | null>(null)
+    const [clanRank, setClanRank] = useState<number | null>(null)
     const [verifyResult, setVerifyResult] = useState<boolean | null>(null)
 
     const [proofDone, setProofDone] = useState(false)
@@ -155,12 +156,21 @@ export function MNISTDraw() {
         setClan(entry ? clan : null)
         console.log('entry', entry)
         console.log('clan', clan)
-    }
-    async function getClanCounts() {
         let counts = await contract.read.getCounts() as number[]
         // convert BigInt to number
         counts = counts.map((count) => Number(count))
+        // determine clan rank
         setCounts(counts)
+        if (!entry) {
+            return
+        }
+        let rank = 1
+        for (let i = 0; i < counts.length; i++) {
+            if (counts[i] > counts[clan]) {
+                rank++
+            }
+        }
+        setClanRank(rank)
         console.log('counts', counts)
     }
 
@@ -168,7 +178,6 @@ export function MNISTDraw() {
         (async () => {
             if (isConnected && (!clan || isSuccess)) {
                 getAccountClanInfo()
-                getClanCounts()
             }
             if (!isConnected && clan) {
                 setClan(null)
@@ -415,14 +424,14 @@ export function MNISTDraw() {
         return (
             <div className='verify'>
                 <h1 className='text-2xl'>
-                    Verified by on chain smart { }
+                    Verified by
                     <a
                         href={`https://goerli-optimism.etherscan.io/address/${Verifier.address}#code`}
                         target='_blank'
                         rel='noopener noreferrer'
                         style={{ textDecoration: 'underline' }}
                     >
-                        contract
+                        {Verifier.address}
                     </a>
                 </h1>
             </div>
@@ -441,6 +450,7 @@ export function MNISTDraw() {
                 <ConnectButton />
             </div>
             {clan && <h1 className='text-2xl pt-7'>Your MNIST Clan: {clan} </h1>}
+            {clan && <h1 className='text-2xl'>Your Clan Rank: {clanRank} </h1>}
             <div className='buttonPanel'>
                 <ProofButton />
                 {clan ? <VerifyOnChainButton /> : <SubmitMnistDigitButton />}
