@@ -10,7 +10,6 @@ import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 
 import { optimismGoerli } from "wagmi/chains";
-import { InjectedConnector } from "wagmi/connectors/injected";
 
 const { chains, publicClient } = configureChains(
   [optimismGoerli],

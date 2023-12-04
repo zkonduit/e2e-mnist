@@ -3,104 +3,19 @@ import { Modal } from 'flowbite-react'
 import { useState, useEffect, FC } from 'react'
 import './MNIST.css'
 import './App.css'
-import { useSharedResources } from '@/providers/ezkl'
 import { Button } from '@/components/button/Button'
 import styles from '../../app/styles.module.scss'
 import { stringify } from 'json-bigint'
 import { getContract } from 'wagmi/actions'
 import { publicProvider } from 'wagmi/providers/public'
-import { useAccount, useConnect, usePrepareContractWrite, useContractWrite, useWaitForTransaction, useDisconnect } from 'wagmi'
+import { useAccount, usePrepareContractWrite, useContractWrite, useWaitForTransaction } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import type { NextPage } from 'next';
 import BarGraph from '../bargraph/BarGraph'; // Adjust the path as necessary
 import hub from '@ezkljs/hub'
+import MNIST from '../../contract_data/MnistClan.json'
+import Verifier from '../../contract_data/Halo2Verifier.json'
 const size = 28
 const MNISTSIZE = 784
-
-const abi = [
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "clan",
-        "outputs": [
-            {
-                "internalType": "uint8",
-                "name": "",
-                "type": "uint8"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "entered",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getCounts",
-        "outputs": [
-            {
-                "internalType": "uint256[10]",
-                "name": "",
-                "type": "uint256[10]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes",
-                "name": "proof",
-                "type": "bytes"
-            },
-            {
-                "internalType": "uint256[]",
-                "name": "instances",
-                "type": "uint256[]"
-            }
-        ],
-        "name": "submitDigit",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "verifier",
-        "outputs": [
-            {
-                "internalType": "contract Verifier",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
 
 function handleFileDownload(fileName: string, buffer: Uint8Array) {
     // Create a blob from the buffer
@@ -136,28 +51,31 @@ const MNISTBoard: FC<IMNISTBoardProps> = ({ grid, onChange }) => {
     const GridSquare = (row: number, col: number) => {
         const handleChange = () => {
             if (mouseDown) {
-                onChange(row, col)
+                onChange(row, col);
             }
-        }
+        };
 
-        const handleMouseDown = () => {
-            setMouseDown(true)
-            onChange(row, col)
-        }
+        const handleInteractionStart = () => {
+            setMouseDown(true);
+            onChange(row, col);
+        };
 
-        const handleMouseUp = () => {
-            setMouseDown(false)
-        }
+        const handleInteractionEnd = () => {
+            setMouseDown(false);
+        };
 
         return (
             <div
                 className={`square ${grid[row][col] ? 'on' : 'off'}`}
                 onMouseEnter={handleChange}
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseUp}
+                onMouseDown={handleInteractionStart}
+                onMouseUp={handleInteractionEnd}
+                onTouchStart={handleInteractionStart}
+                onTouchEnd={handleInteractionEnd}
             />
-        )
-    }
+        );
+    };
+
 
     const renderCol = (col: number) => {
         const mycol = []
@@ -185,7 +103,6 @@ const MNISTBoard: FC<IMNISTBoardProps> = ({ grid, onChange }) => {
 }
 
 export function MNISTDraw() {
-    const { utils } = useSharedResources()
     const [openModal, setOpenModal] = useState<string | undefined>()
     const props = { openModal, setOpenModal }
     const [prediction, setPrediction] = useState<number>(-1)
@@ -208,27 +125,8 @@ export function MNISTDraw() {
     const {
         config
     } = usePrepareContractWrite({
-        address: "0x2619Aed377C6fC5BdC56d30A4347406dE9cd2A2c",
-        abi: [
-            {
-                name: 'submitDigit',
-                type: 'function',
-                stateMutability: 'nonpayable',
-                inputs: [
-                    {
-                        "internalType": "bytes",
-                        "name": "proof",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "instances",
-                        "type": "uint256[]"
-                    }
-                ],
-                outputs: [],
-            },
-        ],
+        address: MNIST.address as `0x${string}`,
+        abi: MNIST.abi,
         functionName: 'submitDigit',
         args: [
             proof?.proof,
@@ -245,8 +143,8 @@ export function MNISTDraw() {
 
     // Instantiate the contract using wagmi's getContract hook
     const contract = getContract({
-        address: "0x2619Aed377C6fC5BdC56d30A4347406dE9cd2A2c",
-        abi: abi,
+        address: MNIST.address as `0x${string}`,
+        abi: MNIST.abi,
         walletClient: publicProvider(),
         chainId: 420,
     })
@@ -312,12 +210,12 @@ export function MNISTDraw() {
             }
         }
 
-        // console.log('imgTensor', imgTensor)
         const inputFile = JSON.stringify({ input_data: [imgTensor] })
 
         const url = 'https://hub-staging.ezkl.xyz/graphql'
 
-        const artifactId = "04c04f68-0420-488a-8335-203a035b9d88"
+        const artifactId = "d079f79d-a902-43e6-a3a5-b22b0efdbc6a"
+
         setGeneratingProof(true)
         try {
             const initiateProofResp = await hub.initiateProof({
@@ -394,36 +292,10 @@ export function MNISTDraw() {
 
 
     async function doOnChainVerify() {
-        let abi = [
-            {
-                "inputs": [
-                    {
-                        "internalType": "bytes",
-                        "name": "proof",
-                        "type": "bytes"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "instances",
-                        "type": "uint256[]"
-                    }
-                ],
-                "name": "verifyProof",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }
-        ]
 
         let verifierContract = getContract({
-            address: "0xdEc7348eEa1755Ad74bC506af55d4De3F5128284",
-            abi: abi,
+            address: Verifier.address as `0x${string}`,
+            abi: Verifier.abi,
             walletClient: provider,
             chainId: 420,
         })
@@ -545,7 +417,7 @@ export function MNISTDraw() {
                 <h1 className='text-2xl'>
                     Verified by on chain smart { }
                     <a
-                        href={`https://goerli-optimism.etherscan.io/address/0x2619Aed377C6fC5BdC56d30A4347406dE9cd2A2c#code`}
+                        href={`https://goerli-optimism.etherscan.io/address/${Verifier.address}#code`}
                         target='_blank'
                         rel='noopener noreferrer'
                         style={{ textDecoration: 'underline' }}
