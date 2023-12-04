@@ -424,7 +424,7 @@ export function MNISTDraw() {
         return (
             <div className='verify'>
                 <h1 className='text-2xl'>
-                    Verified by
+                    Verified on chain: { }
                     <a
                         href={`https://goerli-optimism.etherscan.io/address/${Verifier.address}#code`}
                         target='_blank'
