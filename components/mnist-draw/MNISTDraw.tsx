@@ -17,29 +17,6 @@ import Verifier from '../../contract_data/Halo2Verifier.json'
 const size = 28
 const MNISTSIZE = 784
 
-function handleFileDownload(fileName: string, buffer: Uint8Array) {
-    // Create a blob from the buffer
-    const blob = new Blob([buffer], { type: "application/octet-stream" });
-
-    // Create an Object URL from the blob
-    const url = window.URL.createObjectURL(blob);
-
-    // Create an anchor element for the download
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-
-    // Trigger the download by simulating a click on the anchor element
-    a.click();
-
-    // Remove the anchor element after download
-    document.body.removeChild(a);
-
-    // Free up the Object URL
-    window.URL.revokeObjectURL(url);
-}
-
 interface IMNISTBoardProps {
     grid: number[][]
     onChange: (row: number, col: number) => void
@@ -107,7 +84,6 @@ export function MNISTDraw() {
     const props = { openModal, setOpenModal }
     const [prediction, setPrediction] = useState<number>(-1)
     const [proof, setProof] = useState<any | null>(null)
-    const [buffer, setBuffer] = useState<Uint8Array | null>(null) // proof file buffer
     const [generatingProof, setGeneratingProof] = useState(false)
     const [counts, setCounts] = useState<number[] | null>(null)
     const [clan, setClan] = useState<number | null>(null)
@@ -381,12 +357,6 @@ export function MNISTDraw() {
     function ProofBlock() {
         return (
             <div className='proof'>
-                <Button
-                    className='w-auto'
-                    type='submit'
-                    onClick={() => handleFileDownload('test.pf', buffer!)}
-                    text='Download Proof File'
-                />
                 <Button
                     className='w-auto'
                     onClick={() => props.setOpenModal('default')}
