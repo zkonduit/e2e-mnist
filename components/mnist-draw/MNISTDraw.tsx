@@ -162,6 +162,7 @@ export function MNISTDraw() {
         })()
     }, [isConnected, isSuccess, address])
 
+    // Reload clan info when account changes
     useEffect(() => {
         if (isConnected) {
             setClan(null)
@@ -238,7 +239,7 @@ export function MNISTDraw() {
             const results = getProofResp?.instances?.map((instance) => {
                 const bigInst = BigInt(instance)
                 // is negative
-                if (bigInst > BigInt(2) ** BigInt(128) - BigInt(1)) {
+                if (bigInst > BigInt(2) ** BigInt(127) - BigInt(1)) {
                     return bigInst - p
                 } else {
                     return bigInst
