@@ -11,9 +11,9 @@ import { publicProvider } from 'wagmi/providers/public'
 import { useAccount, usePrepareContractWrite, useContractWrite, useWaitForTransaction } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import BarGraph from '../bargraph/BarGraph'; // Adjust the path as necessary
-import hub from '@ezkljs/hub'
 import MNIST from '../../contract_data/MnistClan.json'
 import Verifier from '../../contract_data/Halo2Verifier.json'
+import axios from 'axios'
 const size = 28
 const MNISTSIZE = 784
 
@@ -198,53 +198,70 @@ export function MNISTDraw() {
 
         const inputFile = JSON.stringify({ input_data: [imgTensor] })
 
-        const url = 'https://hub-staging.ezkl.xyz/graphql'
-
-        const artifactId = "d079f79d-a902-43e6-a3a5-b22b0efdbc6a"
-
         setGeneratingProof(true)
         try {
-            const initiateProofResp = await hub.initiateProof({
-                artifactId,
-                inputFile,
-                url,
-            })
-            // console.log('initiateProofResp', initiateProofResp)
+            let formData = new FormData();
+            formData.append("data", new Blob([inputFile], { type: "application/json" }));
 
-            let { status } = initiateProofResp
-            const { id } = initiateProofResp
+            // API request to update artifacts with new input.json using axios
+            await axios.put(`${process.env.NEXT_PUBLIC_ARCHON_URL}/artifact/mnist`, formData, {
+                headers: {
+                    'X-API-KEY': process.env.NEXT_PUBLIC_ARCHON_API_KEY,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            // Prepare data for gen-witness and prove requests
+            const requestBody = [
+                {
+                    "ezkl_command": {
+                        "GenWitness": {
+                            "data": "input.json",
+                            "compiled_circuit": "model.compiled",
+                            "output": "witness.json",
+                        },
+                    },
+                    "working_dir": "idol_model_2",
+                },
+                {
+                    "ezkl_command": {
+                        "Prove": {
+                            "witness": "witness.json",
+                            "compiled_circuit": "model.compiled",
+                            "pk_path": "pk.key",
+                            "proof_path": "proof.json",
+                            "srs_path": null,
+                            "proof_type": "Single",
+                            "check_mode": "UNSAFE",
+                        },
+                    },
+                    "working_dir": "mnist",
+                },
+            ];
+
+            // Prove request using axios
+            const proveRes = await axios.post(`${process.env.NEXT_PUBLIC_ARCHON_URL}/spell}`, requestBody, {
+                headers: {
+                    'X-API-KEY': process.env.NEXT_PUBLIC_ARCHON_API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log("full data: ", proveRes.data);
+            console.log("id: ", proveRes.data.id);
 
             let getProofResp
+            let status = null
             while (status !== 'SUCCESS') {
-                getProofResp = await hub.getProof({
-                    id,
-                    url,
-                })
-
-                status = getProofResp.status
-
+                getProofResp = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND}/spell/${proveRes.data.id}`);
+                status = getProofResp.data.status
                 if (status === 'SUCCESS') {
                     break
                 }
                 await new Promise((resolve) => setTimeout(resolve, 2_000))
             }
-            console.log('getProofResp', getProofResp?.instances)
-
-            const p = BigInt(
-                '0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001'
-            )
-            setProof(getProofResp)
-            console.log('proof', JSON.stringify(getProofResp?.instances))
-            console.log("proof", getProofResp?.proof)
-            const results = getProofResp?.instances?.map((instance) => {
-                const bigInst = BigInt(instance)
-                // is negative
-                if (bigInst > BigInt(2) ** BigInt(127) - BigInt(1)) {
-                    return bigInst - p
-                } else {
-                    return bigInst
-                }
-            })
+            setProof(getProofResp?.data)
+            const results = getProofResp?.data?.pretty_public_inputs?.rescaled_outputs
 
             console.log('results', results)
 
@@ -252,14 +269,8 @@ export function MNISTDraw() {
                 throw new Error('Array is empty')
             }
 
-            // find the the index of the max value of the results array which contains BigInts
-            // const index = results?.indexOf(results.reduce((a, b) => (a > b ? a : b)))
-            if (results.length === 0) {
-                throw new Error('Array is empty')
-            }
-
             let maxIndex = 0
-            let maxValue = results[0] // Assuming results is a non-empty array of BigInts
+            let maxValue = results[0]
 
             for (let i = 1; i < results.length; i++) {
                 if (results[i] > maxValue) {
@@ -271,6 +282,7 @@ export function MNISTDraw() {
             setProofDone(true)
             // console.log('index', index)
         } catch (error) {
+            alert(error);
             console.log('error', error)
         }
         setGeneratingProof(false)
@@ -286,7 +298,7 @@ export function MNISTDraw() {
             chainId: 420,
         })
 
-        let result = await verifierContract.read.verifyProof([proof?.proof, proof?.instances]) as boolean
+        let result = await verifierContract.read.verifyProof([proof?.hex_proof, proof?.pretty_public_inputs?.outputs]) as boolean
         setVerifyResult(result);
     }
 
