@@ -11,6 +11,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'POST') {
         try {
 
+            // Construct the callback URL
+            const protocol = req.headers['x-forwarded-proto'] || 'http';
+            const host = req.headers.host;
+            const callbackUrl = `${protocol}://${host}/api/callback`;
+
             let formData = new FormData();
             formData.append("data", new Blob([JSON.stringify(req.body)], { type: "application/json" }));
 
@@ -52,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             ];
 
             // Prove request using axios
-            const proveRes = await axios.post(`${process.env.NEXT_PUBLIC_ARCHON_URL}/spell?callback_url=${process.env.NEXT_PUBLIC_CALLBACK_URL}`, requestBody, {
+            const proveRes = await axios.post(`${process.env.NEXT_PUBLIC_ARCHON_URL}/spell?callback_url=${callbackUrl}`, requestBody, {
                 headers: {
                     'X-API-KEY': process.env.ARCHON_API_KEY,
                     'Content-Type': 'application/json'
