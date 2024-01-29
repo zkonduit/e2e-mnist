@@ -14,6 +14,7 @@ import BarGraph from '../bargraph/BarGraph'; // Adjust the path as necessary
 import MNIST from '../../contract_data/MnistClan.json'
 import Verifier from '../../contract_data/Halo2Verifier.json'
 import axios from 'axios'
+import { stat } from 'fs'
 const size = 28
 const MNISTSIZE = 784
 
@@ -189,79 +190,57 @@ export function MNISTDraw() {
 
     async function doProof() {
         // get image from grid
-        let imgTensor: number[] = Array(MNISTSIZE).fill(0)
+        let imgTensor: number[] = Array(MNISTSIZE).fill(0);
         for (let i = 0; i < size; i++) {
             for (let j = 0; j < size; j++) {
-                imgTensor[i * size + j] = grid[i][j]
+                imgTensor[i * size + j] = grid[i][j];
             }
         }
 
-        const inputFile = JSON.stringify({ input_data: [imgTensor] })
+        const inputFile = JSON.stringify({ input_data: [imgTensor] });
+        console.log("inputFile", inputFile);
 
-        setGeneratingProof(true)
+        setGeneratingProof(true);
         try {
-            let formData = new FormData();
-            formData.append("data", new Blob([inputFile], { type: "application/json" }));
-
-            // API request to update artifacts with new input.json using axios
-            await axios.put(`${process.env.NEXT_PUBLIC_ARCHON_URL}/artifact/mnist`, formData, {
+            const responseProof = await fetch('/api/generateProof', {
+                method: 'POST',
                 headers: {
-                    'X-API-KEY': process.env.NEXT_PUBLIC_ARCHON_API_KEY,
-                    'Content-Type': 'multipart/form-data'
-                }
+                    'Content-Type': 'application/json', // Set Content-Type to application/json
+                },
+                body: inputFile, // Send the inputFile string as the request body
             });
 
-            // Prepare data for gen-witness and prove requests
-            const requestBody = [
-                {
-                    "ezkl_command": {
-                        "GenWitness": {
-                            "data": "input.json",
-                            "compiled_circuit": "model.compiled",
-                            "output": "witness.json",
-                        },
-                    },
-                    "working_dir": "idol_model_2",
-                },
-                {
-                    "ezkl_command": {
-                        "Prove": {
-                            "witness": "witness.json",
-                            "compiled_circuit": "model.compiled",
-                            "pk_path": "pk.key",
-                            "proof_path": "proof.json",
-                            "srs_path": null,
-                            "proof_type": "Single",
-                            "check_mode": "UNSAFE",
-                        },
-                    },
-                    "working_dir": "mnist",
-                },
-            ];
+            let result = await responseProof.json();
+            console.log(result);
 
-            // Prove request using axios
-            const proveRes = await axios.post(`${process.env.NEXT_PUBLIC_ARCHON_URL}/spell}`, requestBody, {
-                headers: {
-                    'X-API-KEY': process.env.NEXT_PUBLIC_ARCHON_API_KEY,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const proofId = result.id;
 
-            console.log("full data: ", proveRes.data);
-            console.log("id: ", proveRes.data.id);
+            // Poll the status of the proof generation
+            let status = null;
+            let responseGetProof
+            let timeElapsed = 0
 
-            let getProofResp
-            let status = null
-            while (status !== 'SUCCESS') {
-                getProofResp = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND}/spell/${proveRes.data.id}`);
-                status = getProofResp.data.status
-                if (status === 'SUCCESS') {
+            while (status !== 200) {
+                responseGetProof = await fetch(`/api/getProof?id=${proofId}`);
+                result = await responseGetProof.json();
+                console.log('result', result)
+                status = result.status;
+                console.log('status', status)
+                if (status === 'success') {
                     break
+                } else if (status === 'pending') {
+                    console.log('Proof still generating. Retrying...');
+                    // log how long we've been waiting
+                    console.log('Waiting for proof to generate...' + timeElapsed + ' seconds');
+                    timeElapsed += 2
+                    await new Promise((resolve) => setTimeout(resolve, 2_000)); // Poll every 2 seconds
+                } else {
+                    throw new Error('Error fetching proof status');
                 }
-                await new Promise((resolve) => setTimeout(resolve, 2_000))
             }
-            setProof(getProofResp?.data)
-            const results = getProofResp?.data?.pretty_public_inputs?.rescaled_outputs
+
+            setProof(result?.data)
+            const results = result?.data?.pretty_public_inputs?.rescaled_outputs
 
             console.log('results', results)
 
@@ -280,7 +259,6 @@ export function MNISTDraw() {
             }
             setPrediction(maxIndex)
             setProofDone(true)
-            // console.log('index', index)
         } catch (error) {
             alert(error);
             console.log('error', error)
