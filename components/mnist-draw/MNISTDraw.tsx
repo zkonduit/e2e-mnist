@@ -250,7 +250,7 @@ export function MNISTDraw() {
             chainId: 420,
         })
 
-        let result = await verifierContract.read.verifyProof([proof?.hex_proof, proof?.pretty_public_inputs?.outputs]) as boolean
+        let result = await verifierContract.read.verifyProof([proof?.hex_proof, proof?.pretty_public_inputs?.outputs[0]]) as boolean
         setVerifyResult(result);
     }
 
