@@ -213,34 +213,8 @@ export function MNISTDraw() {
             let result = await responseProof.json();
             console.log(result);
 
-            const proofId = result.id;
-
-            // Poll the status of the proof generation
-            let status = null;
-            let responseGetProof
-            let timeElapsed = 0
-
-            while (status !== 200) {
-                responseGetProof = await fetch(`/api/getProof?id=${proofId}`);
-                result = await responseGetProof.json();
-                console.log('result', result)
-                status = result.status;
-                console.log('status', status)
-                if (status === 'success') {
-                    break
-                } else if (status === 'pending') {
-                    console.log('Proof still generating. Retrying...');
-                    // log how long we've been waiting
-                    console.log('Waiting for proof to generate...' + timeElapsed + ' seconds');
-                    timeElapsed += 2
-                    await new Promise((resolve) => setTimeout(resolve, 2_000)); // Poll every 2 seconds
-                } else {
-                    throw new Error('Error fetching proof status');
-                }
-            }
-
             setProof(result?.data)
-            const results = result?.data?.pretty_public_inputs?.rescaled_outputs
+            const results = result?.data?.pretty_public_inputs?.rescaled_outputs[0]
 
             console.log('results', results)
 

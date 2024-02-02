@@ -11,10 +11,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'POST') {
         try {
 
-            // Construct the callback URL
-            const protocol = req.headers['x-forwarded-proto'] || 'http';
-            const host = req.headers.host;
-            const callbackUrl = `${protocol}://${host}/api/callback`;
 
             let formData = new FormData();
             formData.append("data", new Blob([JSON.stringify(req.body)], { type: "application/json" }));
@@ -57,17 +53,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             ];
 
             // Prove request using axios
-            const proveRes = await axios.post(`${process.env.NEXT_PUBLIC_ARCHON_URL}/spell?callback_url=${callbackUrl}`, requestBody, {
+            const proveRes = await axios.post(`${process.env.NEXT_PUBLIC_ARCHON_URL}/recipe`, requestBody, {
                 headers: {
                     'X-API-KEY': process.env.ARCHON_API_KEY,
-                    'Content-Type': 'application/json'
                 }
             });
 
-            console.log("full data: ", proveRes.data);
-            console.log("id: ", proveRes.data.id);
+            console.log("proveRes.data.id: ", proveRes.data.id)
 
-            res.status(200).json({ message: 'Proof generation successful', data: proveRes.data });
+            let getProofResp
+            let status = null
+            while (status !== 'Complete') {
+                getProofResp = await axios.get(`${process.env.NEXT_PUBLIC_ARCHON_URL}/recipe/${proveRes.data.id}`, {
+                    headers: {
+                        'X-API-KEY': process.env.ARCHON_API_KEY
+                    }
+                });
+                status = getProofResp.data[1].status
+                if (status === 'Complete') {
+                    break
+                }
+                await new Promise((resolve) => setTimeout(resolve, 2_000))
+            }
+            let parsedData = JSON.parse(getProofResp?.data[1].output)
+
+            res.status(200).json({ message: 'Proof generation successful', data: parsedData });
         } catch (error) {
             console.error(error);
             res.status(500).json({ error });
