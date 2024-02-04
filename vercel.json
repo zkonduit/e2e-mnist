@@ -1,6 +1,6 @@
 {
     "functions": {
-        "app/api/*": {
+        "app/api/generateProof.tsx": {
             "maxDuration": 200
         }
     }
