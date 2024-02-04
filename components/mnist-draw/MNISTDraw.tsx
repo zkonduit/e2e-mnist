@@ -14,7 +14,6 @@ import BarGraph from '../bargraph/BarGraph'; // Adjust the path as necessary
 import MNIST from '../../contract_data/MnistClan.json'
 import Verifier from '../../contract_data/Halo2Verifier.json'
 import axios from 'axios'
-import { stat } from 'fs'
 const size = 28
 const MNISTSIZE = 784
 
@@ -107,8 +106,8 @@ export function MNISTDraw() {
         abi: MNIST.abi,
         functionName: 'submitDigit',
         args: [
-            proof?.proof,
-            proof?.instances
+            proof?.hex_proof,
+            proof?.pretty_public_inputs?.outputs[0]
         ],
         enabled: true,
     })
