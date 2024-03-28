@@ -13,7 +13,6 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import BarGraph from '../bargraph/BarGraph'; // Adjust the path as necessary
 import MNIST from '../../contract_data/MnistClan.json'
 import Verifier from '../../contract_data/Halo2Verifier.json'
-import axios from 'axios'
 const size = 28
 const MNISTSIZE = 784
 
@@ -360,7 +359,7 @@ export function MNISTDraw() {
                 <h1 className='text-2xl'>
                     Verified on chain: { }
                     <a
-                        href={`https://goerli-optimism.etherscan.io/address/${Verifier.address}#code`}
+                        href={`https://sepolia-optimism.etherscan.io/address/${Verifier.address}#code`}
                         target='_blank'
                         rel='noopener noreferrer'
                         style={{ textDecoration: 'underline' }}

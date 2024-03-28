@@ -9,10 +9,10 @@ import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 
-import { optimismGoerli } from "wagmi/chains";
+import { optimismSepolia } from "wagmi/chains";
 
 const { chains, publicClient } = configureChains(
-  [optimismGoerli],
+  [optimismSepolia],
   [
     alchemyProvider({
       apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
