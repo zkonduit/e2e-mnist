@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             let formData = new FormData();
             formData.append("data", new Blob([JSON.stringify(req.body)], { type: "application/json" }));
 
-            const axiosResponse = await axios.put(`${process.env.NEXT_PUBLIC_ARCHON_URL}/artifact/mnist`, formData, {
+            const axiosResponse = await axios.put(`${process.env.NEXT_PUBLIC_ARCHON_URL}/artifact/minst`, formData, {
                 headers: {
                     'X-API-KEY': process.env.ARCHON_API_KEY,
                     'Content-Type': 'multipart/form-data'// Ensures the correct Content-Type header for multipart/form-data
@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                             "output": `witness_${uuid}.json`,
                         },
                     },
-                    "working_dir": "mnist",
+                    "working_dir": "minst",
                 },
                 {
                     "ezkl_command": {
@@ -47,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                             "check_mode": "UNSAFE",
                         },
                     },
-                    "working_dir": "mnist",
+                    "working_dir": "minst",
                 },
             ];
 
@@ -74,9 +74,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 }
                 await new Promise((resolve) => setTimeout(resolve, 2_000))
             }
-            let parsedData = JSON.parse(getProofResp?.data[1].output)
+            const proofFileResp = await axios.get(`${process.env.NEXT_PUBLIC_ARCHON_URL}/artifact/minst/proof_${uuid}.json`, {
+                headers: {
+                    'X-API-KEY': process.env.ARCHON_API_KEY
+                }
+            });
 
-            res.status(200).json({ message: 'Proof generation successful', data: parsedData });
+            res.status(200).json({ message: 'Proof generation successful', data: proofFileResp.data });
         } catch (error) {
             console.error(error);
             res.status(500).json({ error });
